@@ -104,3 +104,31 @@ exports.getMedicineStage = async (req, res) => {
     res.status(500).json({ error: "Error fetching medicine stage", details: error.message });
   }
 };
+
+// ================================
+// Option A: Get full medicine history from blockchain
+// ================================
+exports.getFullMedicineHistory = async (req, res) => {
+  try {
+    const medicineId = req.params.id;
+
+    if (!medicineId) {
+      return res.status(400).json({ error: "Medicine ID is required" });
+    }
+
+    const medicineIdNum = parseInt(medicineId);
+    if (isNaN(medicineIdNum)) {
+      return res.status(400).json({ error: "Invalid Medicine ID" });
+    }
+
+    // Call the smart contract function
+    const history = await contract.methods
+      .getFullMedicineHistory(medicineIdNum)
+      .call();
+
+    res.json(history);
+  } catch (error) {
+    console.error("Error fetching full medicine history:", error);
+    res.status(500).json({ error: "Error fetching full medicine history", details: error.message });
+  }
+};
