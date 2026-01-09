@@ -1,26 +1,33 @@
-import { useEffect, useState } from "react";
-import { getMedicines } from "../services/api";
+import { useEffect, useState, useContext } from "react";
+import { Web3Context } from "../context/Web3Provider";
 import { PackageSearch, AlertCircle, Pill, ChevronRight, Loader } from "lucide-react";
 
 const MedicineList = () => {
+  const { contract } = useContext(Web3Context);
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchMedicines = async () => {
+      if (!contract) return;
       try {
-        const response = await getMedicines();
-        setMedicines(response.data);
-      } catch (error) {
-        console.error("Error fetching medicines:", error);
-        setError("Failed to load medicines. Please try again later.");
+        const count = await contract.methods.getMedicineCount().call();
+        const list = [];
+        for (let i = 0; i < count; i++) {
+          const med = await contract.methods.medicines(i).call();
+          list.push(med);
+        }
+        setMedicines(list);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load medicines from blockchain.");
       } finally {
         setLoading(false);
       }
     };
     fetchMedicines();
-  }, []);
+  }, [contract]);
 
   const getStageColor = (stage) => {
     const stageColors = {
@@ -47,7 +54,7 @@ const MedicineList = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader className="h-10 w-10 text-green-500 animate-spin mb-4" />
-            <p className="text-gray-600">Loading medicines...</p>
+            <p className="text-gray-600">Loading medicines from blockchain...</p>
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-center">
@@ -57,28 +64,28 @@ const MedicineList = () => {
         ) : medicines.length === 0 ? (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center">
             <AlertCircle className="h-8 w-8 text-blue-500 mr-4" />
-            <p className="text-blue-700">No medicines found in the blockchain.</p>
+            <p className="text-blue-700">No medicines found on blockchain.</p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {medicines.map((medicine) => (
-              <div key={medicine._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
+            {medicines.map((med, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
                 <div className="border-b border-gray-100 p-4 flex items-center">
                   <div className="bg-green-100 p-2 rounded-full mr-3">
                     <Pill className="h-5 w-5 text-green-600" />
                   </div>
-                  <h3 className="font-semibold text-lg text-black flex-grow">{medicine.name}</h3>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStageColor(medicine.stage)}`}>
-                    {medicine.stage}
+                  <h3 className="font-semibold text-lg text-black flex-grow">{med.name}</h3>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStageColor(med.stage)}`}>
+                    {med.stage}
                   </span>
                 </div>
-                
+
                 <div className="p-4">
                   <div className="mb-3">
                     <p className="text-sm text-gray-500 mb-1">Description</p>
-                    <p className="text-gray-700">{medicine.description}</p>
+                    <p className="text-gray-700">{med.description}</p>
                   </div>
-                  
+
                   <button className="w-full mt-3 flex items-center justify-center text-green-600 hover:text-green-700 text-sm font-medium">
                     View Details
                     <ChevronRight className="h-4 w-4 ml-1" />
