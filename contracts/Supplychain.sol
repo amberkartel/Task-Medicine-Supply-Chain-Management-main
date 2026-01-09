@@ -225,4 +225,35 @@ contract SupplyChain {
         transactions.push(Transaction(_medicineID, _participant, _action, block.timestamp));
         emit TransactionRecorded(_medicineID, _action, _participant);
     }
+
+    // ================================
+    // Option A: Get full history of a medicine
+    // ================================
+    function getFullMedicineHistory(uint256 _medicineID) 
+        public 
+        view 
+        returns (Transaction[] memory) 
+    {
+        require(_medicineID > 0 && _medicineID <= medicineCounter, "Medicine not found");
+
+        // Count how many transactions belong to this medicine
+        uint256 count = 0;
+        for (uint256 i = 0; i < transactions.length; i++) {
+            if (transactions[i].medicineId == _medicineID) {
+                count++;
+            }
+        }
+
+        // Create array of matching transactions
+        Transaction[] memory history = new Transaction[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < transactions.length; i++) {
+            if (transactions[i].medicineId == _medicineID) {
+                history[index] = transactions[i];
+                index++;
+            }
+        }
+
+        return history;
+    }
 }
